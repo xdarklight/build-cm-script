@@ -230,7 +230,6 @@ then
 		then
 			echo "Skipping building incrementals"
 		else
-			OTA_FROM_TARGET_FILES_SCRIPT=${OTA_FROM_TARGET_FILES_SCRIPT:-"build/tools/releasetools/ota_from_target_files"}
 			SOURCE_TARGET_FILES=$(cd $ROM_DATABASE_SCRIPT_DIR && \
 						node get-target-file-zipnames.js \
 							--device $DEVICE_ID \
@@ -249,7 +248,7 @@ then
 				OLD_ID_WITH_ENDING="${OLD_TARGET_FILES_ZIP##*-}"
 				OLD_INCREMENTAL_ID="${OLD_ID_WITH_ENDING%%.*}"
 
-				if [ ! -e $OLD_TARGET_FILES_ZIP_PATH ]
+				if [ ! -e "${OLD_TARGET_FILES_ZIP_PATH}" ]
 				then
 					echo "${OLD_TARGET_FILES_ZIP_PATH} does not exist - skipping building incremental update for it."
 					continue
@@ -260,10 +259,26 @@ then
 				INCREMENTAL_FILENAME="incremental-${OLD_INCREMENTAL_ID}-${INCREMENTAL_ID}.zip"
 				INCREMENTAL_FILE_PATH="${INCREMENTAL_UPDATES_DIRECTORY}/${INCREMENTAL_FILENAME}"
 
-				time $SCHEDULING $OTA_FROM_TARGET_FILES_SCRIPT --worker_threads 1 \
-					--incremental_from $OLD_TARGET_FILES_ZIP_PATH \
-					$TARGET_FILES_ZIP \
-					$INCREMENTAL_FILE_PATH
+				# Target cmupdaterincremental is not upstream thus it can only be used for custom builds.
+				# For all other builds we simply use the command provided in OTA_FROM_TARGET_FILES_SCRIPT.
+				if [ -n "${OTA_FROM_TARGET_FILES_SCRIPT}" ]
+				then
+					time $SCHEDULING $OTA_FROM_TARGET_FILES_SCRIPT \
+						--worker_threads 1 \
+						--incremental_from $OLD_TARGET_FILES_ZIP_PATH \
+						$TARGET_FILES_ZIP \
+						$INCREMENTAL_FILE_PATH
+				else
+					time $SCHEDULING \
+						OTA_FROM_TARGET_SCRIPT_EXTRA_OPTS=--worker_threads 1 \
+						INCREMENTAL_SOURCE_BUILD_ID="${OLD_INCREMENTAL_ID}" \
+						INCREMENTAL_SOURCE_TARGETFILES_ZIP="${OLD_TARGET_FILES_ZIP_PATH}" \
+						WITHOUT_CHECK_API=true \
+						ONE_SHOT_MAKEFILE=cmupdaterincremental \
+						make cmupdaterincremental
+				fi
+
+				mv "${ROM_OUTPUT_DIR}/${INCREMENTAL_FILENAME}" "${INCREMENTAL_FILE_PATH}"
 
 				(cd $ROM_DATABASE_SCRIPT_DIR && \
 						node add-incremental.js --filename $INCREMENTAL_FILENAME \
@@ -286,4 +301,3 @@ mv $TARGET_ROM_MD5SUM "${PUBLIC_ROM_DIRECTORY}"
 mv $TARGET_FILES_ZIP "${TARGET_FILES_DIRECTORY}"
 
 find ${PUBLIC_ROM_DIRECTORY} -type f -exec chmod 644 {} \;
-
