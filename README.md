@@ -1,8 +1,8 @@
 build-cm-script
 ===============
 
-A hacky script used to build CM roms. Use at your own risk - may eat kittens!<br>
-It also integrates [cm-update-server].
+A hacky script for building CyanogenMod roms. Use at your own risk - may eat kittens!<br>
+It also has [cm-update-server] integration.
 
 ---
 
