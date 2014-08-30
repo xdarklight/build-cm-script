@@ -8,12 +8,12 @@ then
 	exit 1
 fi
 
-if [ ! -d ~/bin/ ]
+if [ ! -d "${BIN_DIR}" ]
 then
-	echo "ERROR: ~/bin does not exist!"
+	echo "ERROR: ${BIN_DIR} does not exist!"
 	exit 1
 fi
 
-mkdir ~/bin/targetfiles/${ROM_NAME}
-mkdir ~/bin/roms/${ROM_NAME}
-mkdir ~/bin/incrementals/${ROM_NAME}
+mkdir "${BIN_DIR}/targetfiles/${ROM_NAME}"
+mkdir "${BIN_DIR}/roms/${ROM_NAME}"
+mkdir "${BIN_DIR}/incrementals/${ROM_NAME}"
