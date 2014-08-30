@@ -50,10 +50,18 @@ export OTA_FROM_TARGET_FILES_SCRIPT=build/tools/releasetools/ota_from_target_fil
 Starting the build:
 
 ```bash
-build-cm.sh deviceid deviceid-cm11.0 local_manifest_device.xml
+build-cm.sh deviceid romdirectory local_manifest_device.xml
 
 # Example:
 # build-cm.sh falcon motog-cm11.0 local_manifest_moto_g.xml
+```
+
+Note: To create the required subdirectories in BIN_DIR you can simply use:
+```bash
+add-rom-directories.sh romdirectory
+
+# Example:
+# add-rom-directories.sh motog-cm11.0
 ```
 
   [cm-update-server]: https://github.com/xdarklight/cm-update-server/
