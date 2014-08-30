@@ -56,7 +56,7 @@ build-cm.sh deviceid romdirectory local_manifest_device.xml
 # build-cm.sh falcon motog-cm11.0 local_manifest_moto_g.xml
 ```
 
-Note: To create the required subdirectories in BIN_DIR you can simply use:
+**Note:** To create the required subdirectories in BIN_DIR (= before the very first build) you can simply use:
 ```bash
 add-rom-directories.sh romdirectory
 
