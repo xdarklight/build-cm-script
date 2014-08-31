@@ -108,6 +108,7 @@ then
 
 	# Remove potentially stale files.
 	rm -f $ROM_OUTPUT_DIR/cm-*.zip
+	rm -f $ROM_OUTPUT_DIR/incremental*.zip
 	rm -f $ROM_OUTPUT_DIR/md5sum
 	rm -f $TARGET_FILES_OUTPUT_DIR/cm_*.zip
 	rm -f $ROM_OUTPUT_DIR/system/build.prop
