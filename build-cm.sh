@@ -269,13 +269,13 @@ then
 						$TARGET_FILES_ZIP \
 						$INCREMENTAL_FILE_PATH
 				else
-					time $SCHEDULING \
-						OTA_FROM_TARGET_SCRIPT_EXTRA_OPTS=--worker_threads 1 \
+					time $SCHEDULING make \
+						OTA_FROM_TARGET_SCRIPT_EXTRA_OPTS="--worker_threads 1" \
 						INCREMENTAL_SOURCE_BUILD_ID="${OLD_INCREMENTAL_ID}" \
 						INCREMENTAL_SOURCE_TARGETFILES_ZIP="${OLD_TARGET_FILES_ZIP_PATH}" \
 						WITHOUT_CHECK_API=true \
 						ONE_SHOT_MAKEFILE=cmupdaterincremental \
-						make cmupdaterincremental
+						cmupdaterincremental
 				fi
 
 				mv "${ROM_OUTPUT_DIR}/${INCREMENTAL_FILENAME}" "${INCREMENTAL_FILE_PATH}"
