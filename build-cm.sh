@@ -244,6 +244,8 @@ then
 					continue
 				fi
 
+				CMUPDATERINCREMENTAL_HELPER_MAKEFILE="external/helper_cmupdaterincremental/build.mk"
+
 				OLD_TARGET_FILES_ZIP_PATH="${TARGET_FILES_DIRECTORY}/${OLD_TARGET_FILES_ZIP}"
 				OLD_ID_WITH_ENDING="${OLD_TARGET_FILES_ZIP##*-}"
 				OLD_INCREMENTAL_ID="${OLD_ID_WITH_ENDING%%.*}"
@@ -268,14 +270,17 @@ then
 						--incremental_from $OLD_TARGET_FILES_ZIP_PATH \
 						$TARGET_FILES_ZIP \
 						$INCREMENTAL_FILE_PATH
-				else
+				elif [ -e "${CMUPDATERINCREMENTAL_HELPER_MAKEFILE}" ]
+				then
 					time $SCHEDULING make \
 						OTA_FROM_TARGET_SCRIPT_EXTRA_OPTS="--worker_threads 1" \
 						INCREMENTAL_SOURCE_BUILD_ID="${OLD_INCREMENTAL_ID}" \
 						INCREMENTAL_SOURCE_TARGETFILES_ZIP="${OLD_TARGET_FILES_ZIP_PATH}" \
 						WITHOUT_CHECK_API=true \
-						ONE_SHOT_MAKEFILE=cmupdaterincremental \
+						ONE_SHOT_MAKEFILE="${CMUPDATERINCREMENTAL_HELPER_MAKEFILE}" \
 						cmupdaterincremental
+				else
+					echo "ERROR: No strategy for building incremental updates found!"
 				fi
 
 				mv "${ROM_OUTPUT_DIR}/${INCREMENTAL_FILENAME}" "${INCREMENTAL_FILE_PATH}"
