@@ -143,8 +143,10 @@ ls -la ${PUBLIC_ROM_DIRECTORY}
 
 echo "Removing builds older than ${DELETE_ROMS_OLDER_THAN} days..."
 
-# Remove old builds
-for FILE in $(find "${PUBLIC_ROM_DIRECTORY}" -type f -mtime +${DELETE_ROMS_OLDER_THAN} -print)
+# Remove old builds.
+# NOTE: -mtime only includes files older than N _full_ days - thus we subtract 1.
+# See: http://unix.stackexchange.com/questions/92346/why-does-find-mtime-1-only-return-files-older-than-2-days
+for FILE in $(find "${PUBLIC_ROM_DIRECTORY}" -type f -mtime +$((${DELETE_ROMS_OLDER_THAN} - 1)) -print)
 do
 	echo "Removing '${FILE}'..."
 
