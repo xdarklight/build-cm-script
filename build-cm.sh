@@ -34,6 +34,10 @@ TARGET_FILES_OUTPUT_DIR="${ROM_OUTPUT_DIR}/obj/PACKAGING/target_files_intermedia
 
 DELETE_ROMS_OLDER_THAN=${DELETE_ROMS_OLDER_THAN:-7}
 
+# NOTE: -mtime only includes files older than N _full_ days - thus we subtract 1.
+# See: http://unix.stackexchange.com/questions/92346/why-does-find-mtime-1-only-return-files-older-than-2-days
+DELETE_ROMS_FIND_MTIME=$((${DELETE_ROMS_OLDER_THAN} - 1))
+
 function disable_build {
 	FILENAME="${1}"
 
@@ -144,9 +148,7 @@ ls -la ${PUBLIC_ROM_DIRECTORY}
 echo "Removing builds older than ${DELETE_ROMS_OLDER_THAN} days..."
 
 # Remove old builds.
-# NOTE: -mtime only includes files older than N _full_ days - thus we subtract 1.
-# See: http://unix.stackexchange.com/questions/92346/why-does-find-mtime-1-only-return-files-older-than-2-days
-for FILE in $(find "${PUBLIC_ROM_DIRECTORY}" -type f -mtime +$((${DELETE_ROMS_OLDER_THAN} - 1)) -print)
+for FILE in $(find "${PUBLIC_ROM_DIRECTORY}" -type f -mtime +${DELETE_ROMS_FIND_MTIME} -print)
 do
 	echo "Removing '${FILE}'..."
 
@@ -213,14 +215,14 @@ fi
 if [ -d "${TARGET_FILES_DIRECTORY}" ]
 then
 	# remove old target files
-	for FILE in $(find "${TARGET_FILES_DIRECTORY}" -type f -mtime +${DELETE_ROMS_OLDER_THAN} -print)
+	for FILE in $(find "${TARGET_FILES_DIRECTORY}" -type f -mtime +${DELETE_ROMS_FIND_MTIME} -print)
 	do
 		echo "Removing '${FILE}'..."
 		rm $FILE
 	done
 
 	# Incrementals were automatically disabled while disabling the original rom so we can safely delete these now.
-	for FILE in $(find "${INCREMENTAL_UPDATES_DIRECTORY}" -type f -mtime +${DELETE_ROMS_OLDER_THAN} -print)
+	for FILE in $(find "${INCREMENTAL_UPDATES_DIRECTORY}" -type f -mtime +${DELETE_ROMS_FIND_MTIME} -print)
 	do
 		echo "Removing '${FILE}'..."
 		rm $FILE
