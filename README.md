@@ -34,9 +34,6 @@ export CM_BUILDTYPE=NIGHTLY
 # Use if you don't want to "make clean" before the new build
 # export SKIP_MAKE_CLEAN=true
 
-# Use if you don't want to "make clean" before the new build
-# export SKIP_MAKE_CLEAN=true
-
 # Use if you don't want to "repo sync" before the new build
 # export SKIP_REPO_SYNC=true
 
