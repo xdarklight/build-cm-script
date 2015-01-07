@@ -72,6 +72,8 @@ then
 	if [ -e .repo/local_manifests/*.xml ]
 	then
 		rm .repo/local_manifests/*.xml
+	else
+		mkdir .repo/local_manifests
 	fi
 
 	SOURCE_MANIFEST_FILEPATH=$(readlink -e "./.repo/manifests/${LOCAL_MANIFEST}")
