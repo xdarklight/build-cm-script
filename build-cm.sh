@@ -99,8 +99,12 @@ fi
 
 export CM_BUILDTYPE=${CM_BUILDTYPE:-NIGHTLY}
 
-echo "Getting CM prebuilts..."
-time vendor/cm/get-prebuilts
+# This was required pre-cm12, but removed in cm12
+if [ -s vendor/cm/get-prebuilts ]
+then
+	echo "Getting CM prebuilts..."
+	time vendor/cm/get-prebuilts
+fi
 
 echo "Setting up build environment..."
 . ./build/envsetup.sh
