@@ -69,11 +69,12 @@ if [ -n "${LOCAL_MANIFEST}" ]
 then
 	echo "Using local manifest: ${LOCAL_MANIFEST}"
 
-	if [ -e .repo/local_manifests/*.xml ]
+	if ls .repo/local_manifests/*.xml 1> /dev/null 2>&1
 	then
 		rm .repo/local_manifests/*.xml
-	else
-		mkdir .repo/local_manifests
+	elif [[ ! -d ".repo/local_manifests" ]]
+	then
+		mkdir ".repo/local_manifests"
 	fi
 
 	SOURCE_MANIFEST_FILEPATH=$(readlink -e "./.repo/manifests/${LOCAL_MANIFEST}")
@@ -100,7 +101,7 @@ fi
 export CM_BUILDTYPE=${CM_BUILDTYPE:-NIGHTLY}
 
 # This was required pre-cm12, but removed in cm12
-if [ -s vendor/cm/get-prebuilts ]
+if [ -s "vendor/cm/get-prebuilts" ]
 then
 	echo "Getting CM prebuilts..."
 	time vendor/cm/get-prebuilts
