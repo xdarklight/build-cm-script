@@ -32,6 +32,8 @@ TARGET_FILES_DIRECTORY=${TARGET_FILES_DIRECTORY:-"${BIN_DIR}/targetfiles/${ROM_S
 ROM_OUTPUT_DIR="out/target/product/${DEVICE_ID}/"
 TARGET_FILES_OUTPUT_DIR="${ROM_OUTPUT_DIR}/obj/PACKAGING/target_files_intermediates/"
 
+PARALLEL_JOBS=${PARALLEL_JOBS:-1}
+
 DELETE_ROMS_OLDER_THAN=${DELETE_ROMS_OLDER_THAN:-7}
 
 # NOTE: -mtime only includes files older than N _full_ days - thus we subtract 1.
@@ -125,7 +127,7 @@ then
 	rm -f $ROM_OUTPUT_DIR/system/build.prop
 else
 	echo "Cleaning output directory..."
-	time $SCHEDULING make -j1 clean
+	time $SCHEDULING make -j${PARALLEL_JOBS} clean
 fi
 
 MAKE_TARGETS=${MAKE_TARGETS:-"bacon"}
@@ -139,7 +141,7 @@ echo "Configuring build..."
 time breakfast "${DEVICE_ID}" || exit 1
 
 echo "Starting build (${MAKE_TARGETS})..."
-time $SCHEDULING make -j1 "${MAKE_TARGETS_ARRAY[@]}" || exit 1
+time $SCHEDULING make -j${PARALLEL_JOBS} "${MAKE_TARGETS_ARRAY[@]}" || exit 1
 
 echo "Finished build!"
 
@@ -281,14 +283,14 @@ then
 				if [ -n "${OTA_FROM_TARGET_FILES_SCRIPT}" ]
 				then
 					time $SCHEDULING $OTA_FROM_TARGET_FILES_SCRIPT \
-						--worker_threads 1 \
+						--worker_threads ${PARALLEL_JOBS} \
 						--incremental_from $OLD_TARGET_FILES_ZIP_PATH \
 						$TARGET_FILES_ZIP \
 						$INCREMENTAL_FILE_PATH
 				elif [ -e "${CMUPDATERINCREMENTAL_HELPER_MAKEFILE}" ]
 				then
 					time $SCHEDULING make \
-						OTA_FROM_TARGET_SCRIPT_EXTRA_OPTS="--worker_threads 1" \
+						OTA_FROM_TARGET_SCRIPT_EXTRA_OPTS="--worker_threads ${PARALLEL_JOBS}" \
 						INCREMENTAL_SOURCE_BUILD_ID="${OLD_INCREMENTAL_ID}" \
 						INCREMENTAL_SOURCE_TARGETFILES_ZIP="${OLD_TARGET_FILES_ZIP_PATH}" \
 						WITHOUT_CHECK_API=true \
