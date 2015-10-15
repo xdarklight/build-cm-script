@@ -130,9 +130,6 @@ else
 	time $SCHEDULING make -j${PARALLEL_JOBS} clean
 fi
 
-MAKE_TARGETS=${MAKE_TARGETS:-"bacon"}
-IFS=' ' read -a MAKE_TARGETS_ARRAY <<< "${MAKE_TARGETS}"
-
 # Required, because otherwise CM won't build.
 set +e
 set +o xtrace
@@ -140,8 +137,8 @@ set +o xtrace
 echo "Configuring build..."
 time breakfast "${DEVICE_ID}" || exit 1
 
-echo "Starting build (${MAKE_TARGETS})..."
-time $SCHEDULING make -j${PARALLEL_JOBS} "${MAKE_TARGETS_ARRAY[@]}" || exit 1
+echo "Starting build..."
+time $SCHEDULING make -j${PARALLEL_JOBS} bacon || exit 1
 
 echo "Finished build!"
 
