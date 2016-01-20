@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -e
+set -o xtrace
+set -o pipefail
+
 ROM_NAME="${1}"
 DEVICE_ID="${2}"
 
