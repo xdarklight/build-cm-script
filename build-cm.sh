@@ -40,20 +40,11 @@ DELETE_ROMS_OLDER_THAN=${DELETE_ROMS_OLDER_THAN:-7}
 # See: http://unix.stackexchange.com/questions/92346/why-does-find-mtime-1-only-return-files-older-than-2-days
 DELETE_ROMS_FIND_MTIME=$((${DELETE_ROMS_OLDER_THAN} - 1))
 
-function disable_build {
-	FILENAME="${1}"
-
-	(cd $ROM_DATABASE_SCRIPT_DIR && \
-		node disable-build.js \
-			--device $DEVICE_ID \
-			--filename $FILENAME \
-			--subdirectory $ROM_SUBDIRECTORY \
-			--disable_incrementals)
-}
-
 set -e
 set -o xtrace
 set -o pipefail
+
+source "$(dirname $(readlink -f "${BASH_SOURCE:-$0}"))/rom-database-commands.sh"
 
 # Building will fail of no valid locale is set.
 export LC_ALL=en_US.UTF-8
@@ -145,9 +136,9 @@ echo "Finished build!"
 set -e
 set -o xtrace
 
-TARGET_ROM_ZIP=$ROM_OUTPUT_DIR/cm-*.zip
-TARGET_ROM_MD5SUM=$TARGET_ROM_ZIP.md5sum
-TARGET_FILES_ZIP=$TARGET_FILES_OUTPUT_DIR/cm_*target*.zip
+TARGET_ROM_ZIP=$(readlink -f $ROM_OUTPUT_DIR/cm-*.zip)
+TARGET_ROM_MD5SUM=$(readlink -f $TARGET_ROM_ZIP.md5sum)
+TARGET_FILES_ZIP=$(readlink -f $TARGET_FILES_OUTPUT_DIR/cm_*target*.zip)
 
 # Don't use absolute paths in the md5sum file.
 sed -r -i "s|$(readlink -e ${ROM_OUTPUT_DIR})/?||g" $TARGET_ROM_MD5SUM
@@ -161,9 +152,9 @@ for FILE in $(find "${PUBLIC_ROM_DIRECTORY}" -type f -mtime +${DELETE_ROMS_FIND_
 do
 	echo "Removing '${FILE}'..."
 
-	if [[ -n "${ROM_DATABASE_SCRIPT_DIR}" && $FILE =~ \.zip$ ]]
+	if [[ $FILE =~ \.zip$ ]]
 	then
-		disable_build $(basename $FILE)
+		rom_db_disable_build "${DEVICE_ID}" "${ROM_SUBDIRECTORY}" "$(basename "${FILE}")"
 	fi
 
 	rm $FILE
@@ -171,20 +162,11 @@ done
 
 ls -la ${PUBLIC_ROM_DIRECTORY}
 
-if [[ -n "${ROM_DATABASE_SCRIPT_DIR}" ]]
+if rom_db_is_available
 then
-	FILENAME=$(basename $TARGET_ROM_ZIP)
-	MD5SUM=$(cat $TARGET_ROM_MD5SUM | cut -d' ' -f1)
-	TARGET_FILES_FILENAME=$(basename $TARGET_FILES_ZIP)
-	API_LEVEL=$(cat $ROM_OUTPUT_DIR/system/build.prop | grep "ro.build.version.sdk" | cut -d'=' -f2)
-	BUILD_TIMESTAMP=$(cat $ROM_OUTPUT_DIR/system/build.prop | grep "ro.build.date.utc" | cut -d'=' -f2)
-	INCREMENTAL_ID=$(cat $ROM_OUTPUT_DIR/system/build.prop | grep "ro.build.version.incremental" | cut -d'=' -f2)
-	CHANGELOG_FILE="${ROM_OUTPUT_DIR}/all-projects-changelog.txt"
-
-	CHANGELOG_SINCE=$(cd $ROM_DATABASE_SCRIPT_DIR && \
-				node get-sourcecode-timestamp.js \
-					--device $DEVICE_ID \
-					--subdirectory $ROM_SUBDIRECTORY)
+	MD5SUM="$(cut -d' ' -f1 "${TARGET_ROM_MD5SUM}")"
+	CHANGELOG_FILE="$(readlink -e "${ROM_OUTPUT_DIR}")/all-projects-changelog.txt"
+	CHANGELOG_SINCE="$(rom_db_get_source_timestamp "${DEVICE_ID}" "${ROM_SUBDIRECTORY}")"
 
 	# Only generate the changelog if we have a "start" value.
 	if [[ -n "${CHANGELOG_SINCE}" ]]
@@ -196,29 +178,19 @@ then
 		echo "(unknown)" > $CHANGELOG_FILE
 	fi
 
-	if [ -z "${SOURCE_TIMESTAMP}" ]
-	then
-		SOURCE_TIMESTAMP_PARAM=""
-	else
-		SOURCE_TIMESTAMP_PARAM="--sourcecode_timestamp ${SOURCE_TIMESTAMP}"
-	fi
-
 	# Formatting for CMUpdater.
 	sed -r -i 's|^project[ ](.*)[/]$|   \* \1|g' "${CHANGELOG_FILE}"
 
-	CHANGELOG_PATH=$(readlink -e "${CHANGELOG_FILE}")
-	FILESIZE=$(stat --printf="%s" $TARGET_ROM_ZIP)
-
-	# First disable potentially existing builds
-	# (for example if the current build is a re-build on the same date).
-	disable_build $FILENAME
-
-	(cd $ROM_DATABASE_SCRIPT_DIR && \
-		node add-build.js --device $DEVICE_ID --filename $FILENAME --md5sum $MD5SUM \
-			--channel $CM_BUILDTYPE --api_level $API_LEVEL --subdirectory $ROM_SUBDIRECTORY \
-			--active --timestamp $BUILD_TIMESTAMP $SOURCE_TIMESTAMP_PARAM \
-			--changelogfile $CHANGELOG_PATH --incrementalid $INCREMENTAL_ID \
-			--targetfileszip $TARGET_FILES_FILENAME --filesize $FILESIZE)
+	rom_db_add_build \
+		"${DEVICE_ID}" \
+		"${ROM_SUBDIRECTORY}" \
+		"${TARGET_ROM_ZIP}" \
+		"${MD5SUM}" \
+		"$(basename "${TARGET_FILES_ZIP}")" \
+		"${ROM_OUTPUT_DIR}/system/build.prop" \
+		"${CM_BUILDTYPE}" \
+		"${SOURCE_TIMESTAMP}" \
+		"${CHANGELOG_FILE}"
 fi
 
 if [ -d "${TARGET_FILES_DIRECTORY}" ]
@@ -238,17 +210,13 @@ then
 	done
 
 	# Building incrementals is only possible if the database script exists.
-	if [[ -n "${ROM_DATABASE_SCRIPT_DIR}" ]]
+	if rom_db_is_available
 	then
 		if [[ "${SKIP_BUILDING_INCREMENTALS}" == "true" ]]
 		then
 			echo "Skipping building incrementals"
 		else
-			SOURCE_TARGET_FILES=$(cd $ROM_DATABASE_SCRIPT_DIR && \
-						node get-target-file-zipnames.js \
-							--device $DEVICE_ID \
-							--subdirectory $ROM_SUBDIRECTORY \
-							--max_age_days $DELETE_ROMS_OLDER_THAN)
+			SOURCE_TARGET_FILES=$(rom_db_get_target_files_zip_names "${DEVICE_ID}" "${ROM_SUBDIRECTORY}" "${DELETE_ROMS_OLDER_THAN}")
 
 			for OLD_TARGET_FILES_ZIP in $SOURCE_TARGET_FILES
 			do
@@ -280,10 +248,10 @@ then
 				if [ -n "${OTA_FROM_TARGET_FILES_SCRIPT}" ]
 				then
 					time $SCHEDULING $OTA_FROM_TARGET_FILES_SCRIPT \
-						--worker_threads ${PARALLEL_JOBS} \
-						--incremental_from $OLD_TARGET_FILES_ZIP_PATH \
-						$TARGET_FILES_ZIP \
-						$INCREMENTAL_FILE_PATH
+						--worker_threads "${PARALLEL_JOBS}" \
+						--incremental_from "${OLD_TARGET_FILES_ZIP_PATH}" \
+						"${TARGET_FILES_ZIP}" \
+						"${INCREMENTAL_FILE_PATH}"
 				elif [ -e "${CMUPDATERINCREMENTAL_HELPER_MAKEFILE}" ]
 				then
 					time $SCHEDULING make \
@@ -299,15 +267,13 @@ then
 
 				mv "${ROM_OUTPUT_DIR}/${INCREMENTAL_FILENAME}" "${INCREMENTAL_FILE_PATH}"
 
-				(cd $ROM_DATABASE_SCRIPT_DIR && \
-						node add-incremental.js --filename $INCREMENTAL_FILENAME \
-							--md5sum $(md5sum $INCREMENTAL_FILE_PATH | cut -d' ' -f1) \
-							--filesize $(stat --printf="%s" $INCREMENTAL_FILE_PATH) \
-							--subdirectory $ROM_SUBDIRECTORY \
-							--timestamp $BUILD_TIMESTAMP \
-							--from_target_files $OLD_TARGET_FILES_ZIP \
-							--to_target_files $TARGET_FILES_FILENAME \
-							--active)
+				rom_db_add_incremental \
+					"${ROM_SUBDIRECTORY}" \
+					"${INCREMENTAL_FILE_PATH}" \
+					"$(md5sum "${INCREMENTAL_FILE_PATH}" | cut -d' ' -f1)" \
+					"${OLD_TARGET_FILES_ZIP}" \
+					"${TARGET_FILES_FILENAME}" \
+					"${BUILD_TIMESTAMP}"
 			done
 		fi
 	fi
@@ -315,8 +281,8 @@ else
 	echo "Incremental updates are not handled since their directory (${TARGET_FILES_DIRECTORY}) does not exist."
 fi
 
-mv $TARGET_ROM_ZIP "${PUBLIC_ROM_DIRECTORY}"
-mv $TARGET_ROM_MD5SUM "${PUBLIC_ROM_DIRECTORY}"
-mv $TARGET_FILES_ZIP "${TARGET_FILES_DIRECTORY}"
+mv "${TARGET_ROM_ZIP}" "${PUBLIC_ROM_DIRECTORY}"
+mv "${TARGET_ROM_MD5SUM}" "${PUBLIC_ROM_DIRECTORY}"
+mv "${TARGET_FILES_ZIP}" "${TARGET_FILES_DIRECTORY}"
 
-find ${PUBLIC_ROM_DIRECTORY} -type f -exec chmod 644 {} \;
+find "${PUBLIC_ROM_DIRECTORY}" -type f -exec chmod 644 {} \;

@@ -4,6 +4,8 @@ set -e
 set -o xtrace
 set -o pipefail
 
+source "$(dirname $(readlink -f "${BASH_SOURCE:-$0}"))/rom-database-commands.sh"
+
 ROM_NAME="${1}"
 DEVICE_ID="${2}"
 
@@ -23,25 +25,12 @@ for FILE in $(find "${BIN_DIR}/roms/${ROM_NAME}" -type f -print)
 do
 	echo "Removing '${FILE}'..."
 
-	if [[ -n "${ROM_DATABASE_SCRIPT_DIR}" && $FILE =~ \.zip$ ]]
+	if [[ -n "${DEVICE_ID}" && $FILE =~ \.zip$ ]]
 	then
-		FILENAME=$(basename $FILE)
-
-		if [ -z "${DEVICE_ID}" ]
-		then
-			echo "ERROR: $0 requires argument 2 (DEVICE_ID) to disable existing ROMs"
-			exit 1
-		fi
-
-		(cd $ROM_DATABASE_SCRIPT_DIR && \
-			node disable-build.js \
-				--device $DEVICE_ID \
-				--filename $FILENAME \
-				--subdirectory $ROM_NAME \
-				--disable_incrementals)
+		rom_db_disable_build "${DEVICE_ID}" "${ROM_NAME}" "$(basename "${FILE}")"
 	fi
 
-	rm $FILE
+	rm "${FILE}"
 done
 
 rmdir "${BIN_DIR}/roms/${ROM_NAME}"
