@@ -12,9 +12,9 @@ rom_db_is_available() {
 _rom_db_execute_command() {
 	if rom_db_is_available
 	then
-		pushd "${ROM_DATABASE_SCRIPT_DIR}"
+		pushd "${ROM_DATABASE_SCRIPT_DIR}" > /dev/null
 		node "${1}" "${@:2}"
-		popd
+		popd > /dev/null
 	fi
 }
 
