@@ -216,6 +216,10 @@ then
 		then
 			echo "Skipping building incrementals"
 		else
+			TARGET_FILES_FILENAME="$(basename "${TARGET_FILES_ZIP}")"
+			INCREMENTAL_ID=$(cat $ROM_OUTPUT_DIR/system/build.prop | grep "ro.build.version.incremental" | cut -d'=' -f2)
+			BUILD_TIMESTAMP=$(cat $ROM_OUTPUT_DIR/system/build.prop | grep "ro.build.date.utc" | cut -d'=' -f2)
+
 			SOURCE_TARGET_FILES=$(rom_db_get_target_files_zip_names "${DEVICE_ID}" "${ROM_SUBDIRECTORY}" "${DELETE_ROMS_OLDER_THAN}")
 
 			for OLD_TARGET_FILES_ZIP in $SOURCE_TARGET_FILES
