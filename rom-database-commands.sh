@@ -80,7 +80,7 @@ rom_db_add_build() {
 
 	# First disable potentially existing builds
 	# (for example if the current build is a re-build on the same date).
-	rom_db_disable_build "${DEVICE_ID}" "${ROM_SUBDIRECTORY}" "${ROM_FILE}"
+	rom_db_disable_build "${DEVICE_ID}" "${ROM_SUBDIRECTORY}" "$(basename "${ROM_FILE}")"
 
 	_rom_db_execute_command \
 		add-build.js \
