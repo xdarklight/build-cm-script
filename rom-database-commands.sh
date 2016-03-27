@@ -44,7 +44,7 @@ rom_db_get_source_timestamp() {
 rom_db_get_target_files_zip_names() {
 	local DEVICE_ID="${1}"
 	local ROM_SUBDIRECTORY="${2}"
-	local MAX_AGE_DAYS="${2}"
+	local MAX_AGE_DAYS="${3}"
 
 	_rom_db_execute_command \
 		get-target-file-zipnames.js \
