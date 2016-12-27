@@ -75,6 +75,7 @@ then
 fi
 
 export USE_CCACHE=${USE_CCACHE:-1}
+export CCACHE_COMPRESS=${CCACHE_COMPRESS:-1}
 
 if [[ -z "${CCACHE_DIR}" ]]
 then
